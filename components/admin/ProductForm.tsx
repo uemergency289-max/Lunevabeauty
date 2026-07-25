@@ -7,16 +7,16 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { productSchema, ProductFormValues, CATEGORY_OPTIONS } from "@/lib/validations/product";
 import { toast } from "sonner";
 
-export default function ProductForm() {
+export default function ProductForm({ defaultValues }: { defaultValues?: Partial<ProductFormValues> & { id?: string } }) {
   const router = useRouter();
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<string[]>(defaultValues?.images || []);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorBox, setErrorBox] = useState<string[]>([]);
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
-    defaultValues: { isPublished: true, isBestseller: false, brand: "LunevaBeauty" },
+    defaultValues: { isPublished: true, isBestseller: false, brand: "LunevaBeauty", ...defaultValues },
   });
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,8 +61,9 @@ export default function ProductForm() {
     setErrorBox([]);
     setSubmitting(true);
     try {
-      const res = await fetch("/api/products", {
-        method: "POST",
+      const isEdit = Boolean(defaultValues?.id);
+      const res = await fetch(isEdit ? `/api/products/${defaultValues!.id}` : "/api/products", {
+        method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...values, images }),
       });
@@ -71,7 +72,7 @@ export default function ProductForm() {
         setErrorBox([json.error?.formErrors?.[0] || json.error || "Something went wrong"]);
         return;
       }
-      toast.success("Product added!");
+      toast.success(isEdit ? "Product updated" : "Product added!");
       router.push("/admin/products");
       router.refresh();
     } catch {
@@ -148,7 +149,7 @@ export default function ProductForm() {
       </div>
 
       <button type="submit" disabled={submitting} className="px-8 py-3 bg-charcoal text-white font-body text-[13px] uppercase tracking-wide">
-        {submitting ? "Saving..." : "Add Product to Store"}
+        {submitting ? "Saving..." : defaultValues?.id ? "Update Product" : "Add Product to Store"}
       </button>
 
       <style jsx global>{`
@@ -157,4 +158,4 @@ export default function ProductForm() {
       `}</style>
     </form>
   );
-      }
+            }
