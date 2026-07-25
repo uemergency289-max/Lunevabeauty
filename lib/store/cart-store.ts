@@ -15,6 +15,7 @@ interface CartState {
   items: CartItem[];
   addItem: (product: Product, variantId: string, quantity?: number) => void;
   removeItem: (productId: string, variantId: string) => void;
+  clearCart: () => void;
   subtotal: () => number;
 }
 
@@ -22,20 +23,70 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+
       addItem: (product, variantId, quantity = 1) => {
-        const variant = product.variants.find((v) => v.id === variantId) ?? product.variants[0];
+        const variant =
+          product.variants.find((v) => v.id === variantId) ??
+          product.variants[0];
+
         set((state) => {
-          const existing = state.items.find((i) => i.productId === product.id && i.variantId === variant.id);
+          const existing = state.items.find(
+            (i) =>
+              i.productId === product.id &&
+              i.variantId === variant.id
+          );
+
           if (existing) {
-            return { items: state.items.map((i) => i.productId === product.id && i.variantId === variant.id ? { ...i, quantity: i.quantity + quantity } : i) };
+            return {
+              items: state.items.map((i) =>
+                i.productId === product.id &&
+                i.variantId === variant.id
+                  ? {
+                      ...i,
+                      quantity: i.quantity + quantity,
+                    }
+                  : i
+              ),
+            };
           }
-          return { items: [...state.items, { productId: product.id, variantId: variant.id, name: product.name, image: product.images[0], price: product.price + variant.priceModifier, quantity }] };
+
+          return {
+            items: [
+              ...state.items,
+              {
+                productId: product.id,
+                variantId: variant.id,
+                name: product.name,
+                image: product.images[0],
+                price: product.price + variant.priceModifier,
+                quantity,
+              },
+            ],
+          };
         });
       },
+
       removeItem: (productId, variantId) =>
-        set((state) => ({ items: state.items.filter((i) => !(i.productId === productId && i.variantId === variantId)) })),
-      subtotal: () => get().items.reduce((sum, i) => sum + i.price * i.quantity, 0),
+        set((state) => ({
+          items: state.items.filter(
+            (i) =>
+              !(
+                i.productId === productId &&
+                i.variantId === variantId
+              )
+          ),
+        })),
+
+      clearCart: () => set({ items: [] }),
+
+      subtotal: () =>
+        get().items.reduce(
+          (sum, i) => sum + i.price * i.quantity,
+          0
+        ),
     }),
-    { name: "lunevabeauty-cart" }
+    {
+      name: "lunevabeauty-cart",
+    }
   )
 );
